@@ -23,7 +23,14 @@ function App() {
   const [product, setProduct] = useState({ name: "", description: "", price: "", currency: "XOF", category: "Autre", image_url: "" });
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState("Toutes");
-  const [cart, setCart] = useState([]);
+  const [cart, setCart] = useState(() => {
+    try {
+      const saved = localStorage.getItem("taf-market-cart");
+      return saved ? JSON.parse(saved) : [];
+    } catch {
+      return [];
+    }
+  });
   const [affiliateCode, setAffiliateCode] = useState("");
   const [affiliateBusy, setAffiliateBusy] = useState(false);
 
@@ -83,7 +90,16 @@ function App() {
 
   async function signOut() { await supabase.auth.signOut(); setAffiliateCode(""); setNotice("Vous êtes déconnecté."); setPage("Accueil"); }
   function addToCart(item) { setCart(items => [...items, item]); setNotice(item.name + " ajouté au panier."); }
-  const cartTotal = cart.reduce((sum, item) => sum + Number(item.price), 0);
+  useEffect(() => {
+    try { localStorage.setItem("taf-market-cart", JSON.stringify(cart)); }
+    catch { setNotice("Le panier ne peut pas être sauvegardé sur cet appareil."); }
+  }, [cart]);
+
+  const cartTotals = cart.reduce((totals, item) => {
+    const currency = item.currency || "XOF";
+    totals[currency] = (totals[currency] || 0) + Number(item.price || 0);
+    return totals;
+  }, {});
 
   return <div className="app-shell">
     <header className="topbar">
@@ -108,7 +124,7 @@ function App() {
 
       {page === "Connexion" && <section className="page-section narrow"><div className="section-heading"><span className="eyebrow">VOTRE ESPACE</span><h1>{user ? "Votre compte" : authMode === "signup" ? "Créer un compte" : "Se connecter"}</h1><p>Un compte pour acheter, vendre et participer au programme partenaire.</p></div>{user ? <div className="panel"><p>Connecté avec <strong>{user.email}</strong></p><button className="secondary-btn" onClick={signOut}>Se déconnecter</button></div> : <form className="panel form-grid" onSubmit={submitAuth}>{authMode === "signup" && <label className="full">Nom complet<input required value={auth.full_name} onChange={e => setAuth({...auth,full_name:e.target.value})}/></label>}<label className="full">Adresse e-mail<input required type="email" autoComplete="email" value={auth.email} onChange={e => setAuth({...auth,email:e.target.value})}/></label><label className="full">Mot de passe<input required minLength="8" type="password" autoComplete={authMode === "signup" ? "new-password" : "current-password"} value={auth.password} onChange={e => setAuth({...auth,password:e.target.value})}/></label><button className="primary-btn full" disabled={busy}>{busy ? "Patientez…" : authMode === "signup" ? "Créer mon compte" : "Me connecter"}</button><button type="button" className="text-btn full" onClick={() => setAuthMode(authMode === "signup" ? "login" : "signup")}>{authMode === "signup" ? "J’ai déjà un compte" : "Créer un nouveau compte"}</button></form>}</section>}
 
-      {page === "Panier" && <section className="page-section narrow"><div className="section-heading"><span className="eyebrow">VOTRE SÉLECTION</span><h1>Mon panier</h1></div><div className="panel">{cart.length ? <>{cart.map((item,index)=><div className="cart-row" key={index}><span>{item.name}</span><strong>{money(item.price,item.currency)}</strong><button className="text-btn" onClick={() => setCart(items => items.filter((_,i)=>i!==index))}>Retirer</button></div>)}<div className="cart-total"><strong>Total indicatif</strong><strong>{money(cartTotal, cart[0]?.currency || "XOF")}</strong></div><p className="muted">Le paiement en ligne n’est pas encore activé. Ne procédez à aucun transfert d’argent sur la base de cet aperçu.</p></> : <p>Votre panier est vide. <button className="text-btn" onClick={() => setPage("Acheter")}>Découvrir les produits</button></p>}</div></section>}
+      {page === "Panier" && <section className="page-section narrow"><div className="section-heading"><span className="eyebrow">VOTRE SÉLECTION</span><h1>Mon panier</h1></div><div className="panel">{cart.length ? <>{cart.map((item,index)=><div className="cart-row" key={index}><span>{item.name}</span><strong>{money(item.price,item.currency)}</strong><button className="text-btn" onClick={() => setCart(items => items.filter((_,i)=>i!==index))}>Retirer</button></div>)}<div className="cart-totals"><strong>Totaux indicatifs</strong>{Object.entries(cartTotals).map(([currency,total])=><div className="cart-total" key={currency}><span>{currency}</span><strong>{money(total,currency)}</strong></div>)}</div><div className="cart-actions"><button className="text-btn" onClick={() => setCart([])}>Vider le panier</button><button className="secondary-btn" onClick={() => setPage("Acheter")}>Continuer mes achats</button></div><p className="muted">Le panier est conservé sur cet appareil. Le paiement en ligne n’est pas encore activé : aucun transfert d’argent ne doit être effectué sur la base de cet aperçu.</p></> : <p>Votre panier est vide. <button className="text-btn" onClick={() => setPage("Acheter")}>Découvrir les produits</button></p>}</div></section>}
     </main>
     <footer><span>© {new Date().getFullYear()} TAF Market</span><span>Achetez · Vendez · Affiliez</span><span>Mobile Money et cartes : intégration à venir</span></footer>
   </div>;
