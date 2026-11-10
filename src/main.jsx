@@ -34,7 +34,7 @@ function App() {
 
   async function loadProducts() {
     if (!isSupabaseConfigured) return;
-    const { data, error } = await supabase.from("products").select("id,name,description,price,currency,category,image_url,profiles(full_name)").eq("is_active", true).order("created_at", { ascending: false });
+    const { data, error } = await supabase.from("products").select("id,name,description,price,currency,category,image_url").eq("is_active", true).order("created_at", { ascending: false });
     if (!error && data) setProducts(data);
     if (error) setNotice("Chargement des produits impossible : " + error.message);
   }
