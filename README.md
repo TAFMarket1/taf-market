@@ -5,7 +5,7 @@ Marketplace web React/Vite pour acheteurs, vendeurs et partenaires en Afrique et
 ## Fonctions présentes dans l'interface
 - Page d'accueil responsive.
 - Catalogue avec recherche et filtre par catégorie.
-- Panier local (aperçu uniquement, sans paiement).
+- Panier local conservé sur l'appareil, avec totaux séparés par devise (aperçu uniquement, sans paiement).
 - Inscription / connexion par e-mail via Supabase, lorsque le projet est configuré.
 - Publication de produits par les utilisateurs connectés.
 - Page d'information sur le programme d'affiliation.
@@ -25,13 +25,13 @@ Ne jamais mettre une clé `service_role`, un mot de passe ou une clé privée da
 
 ## Base de données Supabase
 Après vérification des tables déjà présentes, ouvrir SQL Editor et appliquer :
-`supabase/migrations/202611100001_marketplace.sql`
+`supabase/migrations/202611100001_marketplace.sql` puis `supabase/migrations/202611100002_affiliate_codes.sql`
 
-Cette migration prépare les profils, les produits, les politiques RLS et la création automatique d'un profil après inscription. Vérifier les politiques existantes avant application si le projet contient déjà des règles personnalisées.
+Ces migrations préparent les profils, les produits, les politiques RLS, la création automatique d'un profil après inscription et les codes personnels d'affiliation. Vérifier les politiques existantes avant application si le projet contient déjà des règles personnalisées.
 
 ## Paiements et affiliation
 Le panier actuel est un aperçu local. Aucun paiement réel n'est encaissé. Mobile Money et cartes nécessitent un prestataire de paiement, des identifiants marchands, des webhooks côté serveur et des tests avant activation.
-Le programme d'affiliation est présenté dans l'interface, mais les liens de tracking, l'attribution des ventes et les commissions ne sont pas encore activés.
+Le code personnel d'affiliation peut être créé lorsque Supabase est configuré et que les deux migrations ont été appliquées. Les liens de tracking, l'attribution des ventes et les commissions ne sont pas encore activés.
 
 ## Compilation
 ```bash
