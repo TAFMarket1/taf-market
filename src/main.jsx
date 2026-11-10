@@ -23,7 +23,9 @@ function App() {
   const [product, setProduct] = useState({ name: "", description: "", price: "", currency: "XOF", category: "Autre", image_url: "" });
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState("Toutes");
-  const [cart, setCart] = useState([]);\n  const [affiliateCode, setAffiliateCode] = useState("");\n  const [affiliateBusy, setAffiliateBusy] = useState(false);
+  const [cart, setCart] = useState([]);
+  const [affiliateCode, setAffiliateCode] = useState("");
+  const [affiliateBusy, setAffiliateBusy] = useState(false);
 
   useEffect(() => {
     if (!isSupabaseConfigured) return;
