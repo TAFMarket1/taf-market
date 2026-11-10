@@ -16,6 +16,8 @@ function App() {
   const [page, setPage] = useState("Accueil");
   const [user, setUser] = useState(null);
   const [products, setProducts] = useState(demoProducts);
+  const [sellerProducts, setSellerProducts] = useState([]);
+  const [sellerProductsBusy, setSellerProductsBusy] = useState(false);
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState("");
   const [authMode, setAuthMode] = useState("signup");
@@ -50,6 +52,36 @@ function App() {
   }
   useEffect(() => { loadProducts(); }, []);
 
+  async function loadSellerProducts() {
+    if (!user || !isSupabaseConfigured) { setSellerProducts([]); return; }
+    setSellerProductsBusy(true);
+    const { data, error } = await supabase.from("products").select("id,name,description,price,currency,category,image_url,is_active,created_at").eq("owner_id", user.id).order("created_at", { ascending: false });
+    if (error) setNotice("Chargement de vos produits impossible : " + error.message);
+    else setSellerProducts(data || []);
+    setSellerProductsBusy(false);
+  }
+
+  useEffect(() => { loadSellerProducts(); }, [user]);
+
+  async function toggleProductStatus(item) {
+    if (!user || !isSupabaseConfigured) return;
+    setBusy(true); setNotice("");
+    const { error } = await supabase.from("products").update({ is_active: !item.is_active }).eq("id", item.id).eq("owner_id", user.id);
+    if (error) setNotice("Modification impossible : " + error.message);
+    else { setNotice(item.is_active ? "Produit masqué du catalogue." : "Produit remis en vente."); await loadSellerProducts(); await loadProducts(); }
+    setBusy(false);
+  }
+
+  async function deleteProduct(item) {
+    if (!user || !isSupabaseConfigured) return;
+    if (!window.confirm("Supprimer définitivement « " + item.name + " » ?")) return;
+    setBusy(true); setNotice("");
+    const { error } = await supabase.from("products").delete().eq("id", item.id).eq("owner_id", user.id);
+    if (error) setNotice("Suppression impossible : " + error.message);
+    else { setNotice("Produit supprimé."); await loadSellerProducts(); await loadProducts(); }
+    setBusy(false);
+  }
+
   const categories = useMemo(() => ["Toutes", ...new Set(products.map(p => p.category).filter(Boolean))], [products]);
   const visibleProducts = products.filter(p => (category === "Toutes" || p.category === category) && (p.name + " " + (p.description || "")).toLowerCase().includes(search.toLowerCase()));
 
@@ -82,7 +114,7 @@ function App() {
     setBusy(true); setNotice("");
     const { error } = await supabase.from("products").insert({ ...product, price: Number(product.price), owner_id: user.id });
     setNotice(error ? "Publication impossible : " + error.message : "Votre produit est publié.");
-    if (!error) { setProduct({ name: "", description: "", price: "", currency: "XOF", category: "Autre", image_url: "" }); await loadProducts(); setPage("Acheter"); }
+    if (!error) { setProduct({ name: "", description: "", price: "", currency: "XOF", category: "Autre", image_url: "" }); await loadProducts(); await loadSellerProducts(); setPage("Vendre"); }
     setBusy(false);
   }
 
@@ -132,7 +164,7 @@ function App() {
 
       {page === "Acheter" && <section className="page-section"><div className="section-heading"><span className="eyebrow">LE CATALOGUE</span><h1>Découvrez les produits</h1><p>Recherchez une offre parmi les produits disponibles.</p></div><div className="catalog-tools"><input value={search} onChange={e => setSearch(e.target.value)} placeholder="Rechercher un produit…" /><select value={category} onChange={e => setCategory(e.target.value)}>{categories.map(c => <option key={c}>{c}</option>)}</select></div><div className="product-grid">{visibleProducts.map(item => <article className="product-card" key={item.id}><div className="product-image">{item.image_url ? <img src={item.image_url} alt={item.name} /> : <span>📦</span>}</div><div className="product-info"><small>{item.category || "Produit"}</small><h3>{item.name}</h3><p>{item.description}</p><strong>{money(item.price, item.currency)}</strong><span className="seller-name">Vendeur : {item.profiles?.full_name || "Partenaire TAF Market"}</span><button className="primary-btn" onClick={() => addToCart(item)}>Ajouter au panier</button></div></article>)}</div>{visibleProducts.length === 0 && <p className="empty-state">Aucun produit ne correspond à votre recherche.</p>}</section>}
 
-      {page === "Vendre" && <section className="page-section narrow"><div className="section-heading"><span className="eyebrow">ESPACE VENDEUR</span><h1>Publier un produit</h1><p>Connectez-vous puis renseignez les informations de votre offre.</p></div>{!user ? <div className="panel"><p>La publication est réservée aux membres connectés.</p><button className="primary-btn" onClick={() => setPage("Connexion")}>Créer un compte / Se connecter</button></div> : <form className="panel form-grid" onSubmit={submitProduct}><label>Nom du produit<input required maxLength="100" value={product.name} onChange={e => setProduct({...product,name:e.target.value})} /></label><label>Catégorie<select value={product.category} onChange={e => setProduct({...product,category:e.target.value})}>{["Mode","Électronique","Maison","Beauté","Formation","Services","Autre"].map(c=><option key={c}>{c}</option>)}</select></label><label>Prix<input required type="number" min="1" step="1" value={product.price} onChange={e => setProduct({...product,price:e.target.value})} /></label><label>Devise<select value={product.currency} onChange={e => setProduct({...product,currency:e.target.value})}><option value="XOF">FCFA (XOF)</option><option value="EUR">Euro (EUR)</option><option value="USD">Dollar (USD)</option></select></label><label className="full">Description<textarea required rows="4" maxLength="1000" value={product.description} onChange={e => setProduct({...product,description:e.target.value})}/></label><label className="full">Lien de l’image (facultatif)<input type="url" placeholder="https://…" value={product.image_url} onChange={e => setProduct({...product,image_url:e.target.value})}/></label><button className="primary-btn full" disabled={busy}>{busy ? "Publication…" : "Publier le produit"}</button></form>}</section>}
+      {page === "Vendre" && <section className="page-section narrow"><div className="section-heading"><span className="eyebrow">ESPACE VENDEUR</span><h1>Gérer mes produits</h1><p>Publiez vos offres, masquez celles qui ne sont plus disponibles et supprimez vos anciennes annonces.</p></div>{!user ? <div className="panel"><p>La publication est réservée aux membres connectés.</p><button className="primary-btn" onClick={() => setPage("Connexion")}>Créer un compte / Se connecter</button></div> : <form className="panel form-grid" onSubmit={submitProduct}><label>Nom du produit<input required maxLength="100" value={product.name} onChange={e => setProduct({...product,name:e.target.value})} /></label><label>Catégorie<select value={product.category} onChange={e => setProduct({...product,category:e.target.value})}>{["Mode","Électronique","Maison","Beauté","Formation","Services","Autre"].map(c=><option key={c}>{c}</option>)}</select></label><label>Prix<input required type="number" min="1" step="1" value={product.price} onChange={e => setProduct({...product,price:e.target.value})} /></label><label>Devise<select value={product.currency} onChange={e => setProduct({...product,currency:e.target.value})}><option value="XOF">FCFA (XOF)</option><option value="EUR">Euro (EUR)</option><option value="USD">Dollar (USD)</option></select></label><label className="full">Description<textarea required rows="4" maxLength="1000" value={product.description} onChange={e => setProduct({...product,description:e.target.value})}/></label><label className="full">Lien de l’image (facultatif)<input type="url" placeholder="https://…" value={product.image_url} onChange={e => setProduct({...product,image_url:e.target.value})}/></label><button className="primary-btn full" disabled={busy}>{busy ? "Publication…" : "Publier le produit"}</button></form>}{user && <div className="seller-management"><div className="seller-list-heading"><h2>Mes produits publiés</h2><button className="secondary-btn" onClick={loadSellerProducts} disabled={sellerProductsBusy}>{sellerProductsBusy ? "Actualisation…" : "Actualiser"}</button></div>{sellerProductsBusy && <p className="muted">Chargement de vos produits…</p>}{!sellerProductsBusy && sellerProducts.length === 0 && <p className="muted">Vous n’avez pas encore publié de produit.</p>}{sellerProducts.map(item => <article className="seller-product-row" key={item.id}><div><strong>{item.name}</strong><p>{money(item.price,item.currency)} · {item.category}</p><span className={item.is_active ? "status-active" : "status-inactive"}>{item.is_active ? "Visible dans le catalogue" : "Masqué du catalogue"}</span></div><div className="seller-product-actions"><button className="secondary-btn" disabled={busy} onClick={() => toggleProductStatus(item)}>{item.is_active ? "Masquer" : "Remettre en vente"}</button><button className="text-btn" disabled={busy} onClick={() => deleteProduct(item)}>Supprimer</button></div></article>)}</div>}</section>}
 
       {page === "Affiliation" && <section className="page-section narrow"><div className="section-heading"><span className="eyebrow">PROGRAMME PARTENAIRE</span><h1>Gagnez en recommandant</h1><p>Le programme d’affiliation est préparé pour permettre aux partenaires de promouvoir les offres des vendeurs.</p></div><div className="panel"><h2>Votre code partenaire</h2>{user ? <div className="affiliate-code-area">{affiliateCode ? <><strong className="affiliate-code">{affiliateCode}</strong><p className="muted">Code personnel créé. Le suivi des clics, ventes et commissions sera activé dans une prochaine étape sécurisée.</p><button className="secondary-btn" onClick={() => { if (navigator.clipboard?.writeText) navigator.clipboard.writeText(affiliateCode).then(() => setNotice("Code copié."), () => setNotice("Copie impossible sur cet appareil.")); else setNotice("La copie automatique n’est pas disponible sur cet appareil."); }}>Copier le code</button></> : <button className="primary-btn" onClick={createAffiliateCode} disabled={affiliateBusy}>{affiliateBusy ? "Création…" : "Créer mon code partenaire"}</button>}</div> : <><p>Connectez-vous pour obtenir votre code personnel.</p><button className="primary-btn" onClick={() => setPage("Connexion")}>Créer un compte / Se connecter</button></>}<h2 className="affiliate-subheading">Comment ça fonctionnera</h2><ol className="steps"><li>Créez votre compte TAF Market.</li><li>Choisissez les produits que vous souhaitez recommander.</li><li>Partagez votre lien partenaire avec votre audience.</li><li>Suivez les ventes validées et vos commissions dans votre espace.</li></ol><p className="muted">Le code personnel est préparé, mais les liens de suivi des clics, l’attribution des ventes, les commissions et les retraits ne sont pas encore actifs. Aucun gain n’est calculé ni garanti dans cette version.</p><button className="primary-btn" onClick={() => setPage("Connexion")}>Rejoindre TAF Market</button></div></section>}
 
