@@ -65,6 +65,12 @@ function App() {
     setBusy(false);
   }
 
+  useEffect(() => {
+    if (!user || !isSupabaseConfigured) { setAffiliateCode(""); return; }
+    supabase.from("affiliate_codes").select("code").eq("user_id", user.id).maybeSingle()
+      .then(({ data }) => { if (data?.code) setAffiliateCode(data.code); });
+  }, [user]);
+
   async function createAffiliateCode() {
     if (!user) { setPage("Connexion"); setNotice("Connectez-vous pour créer votre code partenaire."); return; }
     if (!isSupabaseConfigured) { setNotice("La configuration Supabase est nécessaire pour créer un code partenaire."); return; }
