@@ -141,6 +141,34 @@ function App() {
 
   async function signOut() { await supabase.auth.signOut(); setAffiliateCode(""); setNotice("Vous êtes déconnecté."); setPage("Accueil"); }
   function addToCart(item) { setCart(items => [...items, item]); setNotice(item.name + " ajouté au panier."); }
+
+  async function createOrder() {
+    if (!user) { setPage("Connexion"); setNotice("Connectez-vous pour préparer votre commande."); return; }
+    if (!isSupabaseConfigured) { setNotice("La connexion à Supabase est nécessaire pour créer une commande."); return; }
+    if (!cart.length) return;
+    const currencies = [...new Set(cart.map(item => item.currency || "XOF"))];
+    if (currencies.length !== 1) { setNotice("Pour commander, gardez une seule devise dans le panier à la fois."); return; }
+    if (cart.some(item => !item.id || String(item.id).startsWith("demo-"))) {
+      setNotice("Les produits de démonstration ne peuvent pas être commandés. Le catalogue réel doit être chargé depuis Supabase.");
+      return;
+    }
+    const quantities = new Map();
+    for (const item of cart) quantities.set(item.id, (quantities.get(item.id) || 0) + 1);
+    if ([...quantities.values()].some(quantity => quantity > 20)) {
+      setNotice("La quantité maximale est de 20 exemplaires par produit.");
+      return;
+    }
+    setBusy(true); setNotice("");
+    const p_items = [...quantities.entries()].map(([product_id, quantity]) => ({ product_id, quantity }));
+    const { data, error } = await supabase.rpc("create_order_from_cart", { p_items });
+    if (error) setNotice("Commande non créée : " + error.message);
+    else {
+      setCart([]);
+      setNotice("Commande " + data + " créée en attente de paiement. Aucun paiement n'a été effectué.");
+    }
+    setBusy(false);
+  }
+
   useEffect(() => {
     try { localStorage.setItem("taf-market-cart", JSON.stringify(cart)); }
     catch { setNotice("Le panier ne peut pas être sauvegardé sur cet appareil."); }
@@ -175,7 +203,7 @@ function App() {
 
       {page === "Connexion" && <section className="page-section narrow"><div className="section-heading"><span className="eyebrow">VOTRE ESPACE</span><h1>{recoverySession ? "Choisir un nouveau mot de passe" : user ? "Votre compte" : authMode === "signup" ? "Créer un compte" : authMode === "recovery" ? "Réinitialiser le mot de passe" : "Se connecter"}</h1><p>Un compte pour acheter, vendre et participer au programme partenaire.</p></div>{user && !recoverySession ? <div className="panel"><p>Connecté avec <strong>{user.email}</strong></p><button className="secondary-btn" onClick={signOut}>Se déconnecter</button></div> : <form className="panel form-grid" onSubmit={submitAuth}>{authMode === "signup" && <label className="full">Nom complet<input required value={auth.full_name} onChange={e => setAuth({...auth,full_name:e.target.value})}/></label>}<label className="full">Adresse e-mail<input required type="email" autoComplete="email" value={auth.email} onChange={e => setAuth({...auth,email:e.target.value})}/></label>{(authMode !== "recovery" || recoverySession) && <label className="full">Mot de passe{recoverySession ? " (8 caractères minimum)" : ""}<input required minLength="8" type="password" autoComplete={authMode === "signup" || recoverySession ? "new-password" : "current-password"} value={auth.password} onChange={e => setAuth({...auth,password:e.target.value})}/></label>}<button className="primary-btn full" disabled={busy}>{busy ? "Patientez…" : recoverySession ? "Enregistrer le nouveau mot de passe" : authMode === "signup" ? "Créer mon compte" : authMode === "recovery" ? "Envoyer le lien de réinitialisation" : "Me connecter"}</button>{authMode === "login" && <button type="button" className="text-btn full" onClick={() => setAuthMode("recovery")}>Mot de passe oublié ?</button>}{!recoverySession && <button type="button" className="text-btn full" onClick={() => setAuthMode(authMode === "signup" ? "login" : "signup")}>{authMode === "signup" ? "J’ai déjà un compte" : "Créer un nouveau compte"}</button>}</form>}</section>}
 
-      {page === "Panier" && <section className="page-section narrow"><div className="section-heading"><span className="eyebrow">VOTRE SÉLECTION</span><h1>Mon panier</h1></div><div className="panel">{cart.length ? <>{cart.map((item,index)=><div className="cart-row" key={index}><span>{item.name}</span><strong>{money(item.price,item.currency)}</strong><button className="text-btn" onClick={() => setCart(items => items.filter((_,i)=>i!==index))}>Retirer</button></div>)}<div className="cart-totals"><strong>Totaux indicatifs</strong>{Object.entries(cartTotals).map(([currency,total])=><div className="cart-total" key={currency}><span>{currency}</span><strong>{money(total,currency)}</strong></div>)}</div><div className="cart-actions"><button className="text-btn" onClick={() => setCart([])}>Vider le panier</button><button className="secondary-btn" onClick={() => setPage("Acheter")}>Continuer mes achats</button></div><p className="muted">Le panier est conservé sur cet appareil. Le paiement en ligne n’est pas encore activé : aucun transfert d’argent ne doit être effectué sur la base de cet aperçu.</p></> : <p>Votre panier est vide. <button className="text-btn" onClick={() => setPage("Acheter")}>Découvrir les produits</button></p>}</div></section>}
+      {page === "Panier" && <section className="page-section narrow"><div className="section-heading"><span className="eyebrow">VOTRE SÉLECTION</span><h1>Mon panier</h1></div><div className="panel">{cart.length ? <>{cart.map((item,index)=><div className="cart-row" key={index}><span>{item.name}</span><strong>{money(item.price,item.currency)}</strong><button className="text-btn" onClick={() => setCart(items => items.filter((_,i)=>i!==index))}>Retirer</button></div>)}<div className="cart-totals"><strong>Totaux indicatifs</strong>{Object.entries(cartTotals).map(([currency,total])=><div className="cart-total" key={currency}><span>{currency}</span><strong>{money(total,currency)}</strong></div>)}</div><div className="cart-actions"><button className="text-btn" onClick={() => setCart([])}>Vider le panier</button><button className="secondary-btn" onClick={() => setPage("Acheter")}>Continuer mes achats</button><button className="primary-btn" onClick={createOrder} disabled={busy || !isSupabaseConfigured || new Set(cart.map(item => item.currency || "XOF")).size !== 1}>{busy ? "Préparation…" : "Créer la commande"}</button></div><p className="muted">La commande sera enregistrée en attente de paiement. Aucun paiement n'est encaissé ni confirmé ici. Choisissez une seule devise par commande. Les migrations de commandes doivent être appliquées dans Supabase avant utilisation.</p></> : <p>Votre panier est vide. <button className="text-btn" onClick={() => setPage("Acheter")}>Découvrir les produits</button></p>}</div></section>}
     </main>
     <footer><span>© {new Date().getFullYear()} TAF Market</span><span>Achetez · Vendez · Affiliez</span><span>Mobile Money et cartes : intégration à venir</span></footer>
   </div>;
