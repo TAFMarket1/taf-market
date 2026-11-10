@@ -8,6 +8,7 @@ Marketplace web React/Vite pour acheteurs, vendeurs et partenaires en Afrique et
 - Panier local conservé sur l'appareil, avec totaux séparés par devise (aperçu uniquement, sans paiement).
 - Inscription / connexion par e-mail via Supabase, lorsque le projet est configuré.
 - Publication de produits par les utilisateurs connectés.
+- Espace vendeur : liste des produits personnels, masquage / remise en vente et suppression (protégés par les règles RLS Supabase).
 - Page d'information sur le programme d'affiliation.
 
 ## Démarrage local
