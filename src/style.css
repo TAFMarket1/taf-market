@@ -96,3 +96,8 @@ footer { display: flex; justify-content: space-between; gap: 15px; padding: 22px
 .cart-totals>strong{display:block;margin-bottom:6px}
 .cart-actions{display:flex;gap:14px;align-items:center;flex-wrap:wrap;margin-top:14px}
 .cart-actions .secondary-btn{padding:10px 14px}
+
+
+/* Seller product management */
+.seller-management{margin-top:28px;padding:22px;border:1px solid #eaecf0;border-radius:16px;background:#fff}.seller-list-heading{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:12px}.seller-list-heading h2{margin:0;font-size:20px}.seller-product-row{display:flex;justify-content:space-between;align-items:center;gap:16px;padding:16px 0;border-top:1px solid #eaecf0}.seller-product-row p{margin:6px 0;color:#667085;font-size:14px}.status-active,.status-inactive{font-size:12px;font-weight:700}.status-active{color:#18794e}.status-inactive{color:#946900}.seller-product-actions{display:flex;align-items:center;gap:14px;flex-wrap:wrap}.seller-product-actions .secondary-btn{padding:9px 12px;font-size:13px}.seller-product-actions button:disabled{opacity:.6;cursor:wait}
+@media(max-width:600px){.seller-product-row{align-items:flex-start;flex-direction:column}.seller-product-actions{width:100%}.seller-list-heading{align-items:flex-start;flex-direction:column}}
