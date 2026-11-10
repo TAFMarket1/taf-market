@@ -31,14 +31,16 @@ alter table public.profiles enable row level security;
 alter table public.products enable row level security;
 
 drop policy if exists "Profiles are viewable by everyone" on public.profiles;
-create policy "Profiles are viewable by everyone" on public.profiles
-  for select using (true);
 drop policy if exists "Users can insert their own profile" on public.profiles;
-create policy "Users can insert their own profile" on public.profiles
-  for insert with check (auth.uid() = id);
 drop policy if exists "Users can update their own profile" on public.profiles;
-create policy "Users can update their own profile" on public.profiles
-  for update using (auth.uid() = id) with check (auth.uid() = id);
+drop policy if exists "Users can read their own profile" on public.profiles;
+create policy "Users can read their own profile" on public.profiles
+  for select to authenticated using (auth.uid() = id);
+
+-- Clients may edit a display name, but cannot assign themselves seller/admin roles.
+revoke insert, update on public.profiles from authenticated;
+grant select on public.profiles to authenticated;
+grant update (full_name) on public.profiles to authenticated;
 
 drop policy if exists "Active products are public" on public.products;
 create policy "Active products are public" on public.products
