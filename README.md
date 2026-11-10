@@ -26,9 +26,9 @@ Ne jamais mettre une clé `service_role`, un mot de passe ou une clé privée da
 
 ## Base de données Supabase
 Après vérification des tables déjà présentes, ouvrir SQL Editor et appliquer :
-`supabase/migrations/202611100001_marketplace.sql` puis `supabase/migrations/202611100002_affiliate_codes.sql`
+`supabase/migrations/202611100001_marketplace.sql`, puis `supabase/migrations/202611100002_affiliate_codes.sql`, puis `supabase/migrations/202611100003_orders.sql`
 
-Ces migrations préparent les profils, les produits, les politiques RLS, la création automatique d'un profil après inscription et les codes personnels d'affiliation. Vérifier les politiques existantes avant application si le projet contient déjà des règles personnalisées.
+Ces migrations préparent les profils, les produits, les politiques RLS, la création automatique d'un profil après inscription, les codes personnels d'affiliation et la structure des commandes. La fonction `create_order_from_cart` crée une commande `pending_payment` en recalculant les prix depuis la base et refuse les paniers mélangeant plusieurs devises. Elle ne déclenche aucun paiement et ne marque jamais une commande comme payée. Vérifier les politiques existantes avant application si le projet contient déjà des règles personnalisées.
 
 ## Paiements et affiliation
 Le panier actuel est un aperçu local. Aucun paiement réel n'est encaissé. Mobile Money et cartes nécessitent un prestataire de paiement, des identifiants marchands, des webhooks côté serveur et des tests avant activation.
