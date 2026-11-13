@@ -3,6 +3,20 @@ import ReactDOM from "react-dom/client";
 import { supabase, isSupabaseConfigured } from "./supabase";
 import "./style.css";
 
+// Enable the installable/offline app shell only on production hosting.
+if ("serviceWorker" in navigator && import.meta.env.PROD) {
+  window.addEventListener("load", () => {
+    navigator.serviceWorker.register("/sw.js").catch(error => {
+      console.warn("TAF Market offline support could not be enabled:", error);
+    });
+  });
+}
+
+import React, { useEffect, useMemo, useState } from "react";
+import ReactDOM from "react-dom/client";
+import { supabase, isSupabaseConfigured } from "./supabase";
+import "./style.css";
+
 const demoProducts = [
   { id: "demo-1", name: "Sac artisanal africain", description: "Un accessoire élégant fabriqué avec soin.", price: 12500, currency: "XOF", category: "Mode", image_url: "", profiles: { full_name: "Boutique partenaire" } },
   { id: "demo-2", name: "Formation marketing digital", description: "Apprenez les bases pour développer votre activité.", price: 15000, currency: "XOF", category: "Formation", image_url: "", profiles: { full_name: "TAF Academy" } },
