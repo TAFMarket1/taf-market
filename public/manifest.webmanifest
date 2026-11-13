@@ -1,0 +1,21 @@
+{
+  "id": "/",
+  "name": "TAF Market",
+  "short_name": "TAF Market",
+  "description": "Achetez, vendez et développez vos revenus grâce à l'affiliation.",
+  "lang": "fr",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#f7f8fb",
+  "theme_color": "#111827",
+  "icons": [
+    {
+      "src": "/icons/taf-market.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
