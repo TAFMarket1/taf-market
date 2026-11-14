@@ -12,10 +12,6 @@ if ("serviceWorker" in navigator && import.meta.env.PROD) {
   });
 }
 
-import React, { useEffect, useMemo, useState } from "react";
-import ReactDOM from "react-dom/client";
-import { supabase, isSupabaseConfigured } from "./supabase";
-import "./style.css";
 
 const demoProducts = [
   { id: "demo-1", name: "Sac artisanal africain", description: "Un accessoire élégant fabriqué avec soin.", price: 12500, currency: "XOF", category: "Mode", image_url: "", profiles: { full_name: "Boutique partenaire" } },
