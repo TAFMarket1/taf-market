@@ -34,6 +34,18 @@ Ces migrations préparent les profils, les produits, les politiques RLS, la cré
 Le panier actuel est un aperçu local. Aucun paiement réel n'est encaissé. Mobile Money et cartes nécessitent un prestataire de paiement, des identifiants marchands, des webhooks côté serveur et des tests avant activation.
 Le code personnel d'affiliation peut être créé lorsque Supabase est configuré et que les deux migrations ont été appliquées. Les liens de tracking, l'attribution des ventes et les commissions ne sont pas encore activés.
 
+## Déploiement sur Vercel
+Le dépôt contient `vercel.json` avec les paramètres de compilation Vite : commande `npm run build` et dossier publié `dist`.
+
+Pour publier le site :
+1. Se connecter à Vercel avec le compte du propriétaire du projet.
+2. Importer le dépôt GitHub `TAFMarket1/taf-market`.
+3. Vérifier que Vercel détecte Vite, avec `npm install`, `npm run build` et `dist`.
+4. Dans les variables d'environnement du projet Vercel, ajouter `VITE_SUPABASE_URL` et `VITE_SUPABASE_ANON_KEY` avec les valeurs publiques du projet Supabase. Ne jamais ajouter `service_role`.
+5. Lancer le déploiement. Chaque nouveau push sur `main` pourra ensuite déclencher un nouveau déploiement.
+
+Le dépôt est préparé pour Vercel, mais cela ne signifie pas que le site est déjà publié : l'importation dans le compte Vercel et la configuration des variables doivent encore être effectuées.
+
 ## Compilation
 ```bash
 npm run build
